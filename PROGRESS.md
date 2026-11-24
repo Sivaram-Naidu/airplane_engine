@@ -24,8 +24,14 @@
 | Sea-level static, max | 93.38 | 21.0 | 5.82 | 9.51 | 1587 |
 
 ### Known issues found
-1. **Full sweep takes ~3 h** (10 points). README claimed 1–3 min. `--quick` takes ~2 min.
-   Not yet diagnosed. This blocks fast iteration in Phase 1.
+1. ~~Full sweep takes ~3 h~~ **Resolved: not a model problem.** The Windows power log shows the
+   laptop was in Modern Standby (sleep) from 10:34 to 13:31 during that run. A per-point solver
+   diagnostic re-run took **474 s (~8 min)** for all 10 conditions. Every point converged in 4–9
+   Newton iterations with residual ≤ 8.4e-9 (tolerance 1e-8), so the baseline numbers are
+   genuinely converged. Remaining cost: ~4 s per Newton iteration (CEA chemistry). That is a speed-up
+   candidate for Phase 2, and acceptable for now.
+   Risk noted: the solvers use `err_on_non_converge=False`, so a non-converged point would still
+   print "solved". A convergence guard is proposed for Phase 1.
 2. "Max" power uses the cruise T4 everywhere, so sea-level thrust is too low for a takeoff rating (Phase 1).
 3. `thermo_method` argument is silently overridden in `HBTF.setup()` (cosmetic, Phase 2).
 

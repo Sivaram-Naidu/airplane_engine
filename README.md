@@ -6,8 +6,8 @@ design choices and see how thrust and fuel burn respond.
 
 ## Do I need a GPU?
 No. This is engine *cycle* analysis: it runs on any normal laptop CPU.
-The quick check takes about 2 minutes; the full sweep currently takes about 3 hours
-(known issue, see PROGRESS.md). A GPU only becomes useful much later, for
+The quick check takes about 2 minutes and the full sweep about 8 minutes.
+Keep the laptop awake during a full run (sleep pauses it). A GPU only becomes useful much later, for
 heavy 3D CFD of blades, and even then a multi-core CPU is the main requirement.
 
 ## Setup (Windows, macOS or Linux)
@@ -30,7 +30,7 @@ heavy 3D CFD of blades, and even then a multi-core CPU is the main requirement.
    Expected cruise result: thrust 5900 lbf (26.24 kN), OPR 30.1, BPR 5.11,
    TSFC 0.6307 lbm/(lbf·h) (17.87 g/(kN·s)), T4 2857 °R (1587 K).
    Output is shown in SI and US units.
-5. Full run (cruise down to the runway; currently about 3 hours, see PROGRESS.md):
+5. Full run (cruise down to the runway, about 8 minutes):
    ```
    python run_engine.py
    ```
