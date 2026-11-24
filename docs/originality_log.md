@@ -12,4 +12,4 @@ repository**. Keep it private and consult a patent attorney first. See CLAUDE.md
 | Date | Commit | Contribution | Owner's original? | Notes |
 |---|---|---|---|---|
 | 2026-11-24 | c402624 | Project scaffolding: SI output layer, regression tests, docs structure | Yes (engineering/tooling, not novel IP) | Standard software practice; no patentable content |
-| 2026-11-24 | (Phase 1 commit) | CFM56-7B26/3 validation workflow and hand calibration (BPR, HPC PR, uniform efficiency knob) | Yes (engineering method, not novel IP) | Standard calibration of a public NASA model to public data; no patentable content |
+| 2026-11-24 | 651d642 | CFM56-7B26/3 validation workflow and hand calibration (BPR, HPC PR, uniform efficiency knob) | Yes (engineering method, not novel IP) | Standard calibration of a public NASA model to public data; no patentable content |
