@@ -28,6 +28,20 @@ Only public, open sources are used.
 - Never invent engine data: cite a public source or label it ASSUMPTION in code and in
   docs/assumptions.md. Check licences of new tools in docs/tools.md.
 
+## IP and provenance
+- Third-party code (pyCycle, OpenMDAO, etc.) keeps its licence header and is listed in
+  docs/tools.md. Never present it as original work.
+- docs/originality_log.md is a dated log of design decisions and ideas that are the
+  project owner's OWN original contributions, kept separate from public/third-party
+  material. Each entry has the date and the commit hash.
+- If any work could be a novel, patentable idea (new blade geometry, new cycle
+  configuration, new cooling or optimisation method), STOP and warn the owner BEFORE
+  committing or pushing to any public repository, so it can be kept private and a patent
+  attorney consulted first. (The GitHub remote `origin` is public.)
+- Never use proprietary, leaked or export-controlled data.
+- Long runs (full sweep ~8 min, later optimisations longer): remind the owner to set Windows
+  power to "never sleep when plugged in"; sleep pauses runs (see PROGRESS.md Phase 0).
+
 ## Validation sources
 - ICAO Aircraft Engine Emissions Databank (EASA website): takeoff thrust, OPR, BPR,
   fuel flow for certified engines.

@@ -1,5 +1,5 @@
 """
-US customary -> SI conversions for display.
+US customary -> SI conversions (display only).
 
 pyCycle computes internally in US units (lbf, lbm/s, degR, ft). We keep the model in
 those units and convert only at the output boundary, the same way an app stores
