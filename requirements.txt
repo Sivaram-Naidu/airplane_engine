@@ -1,0 +1,4 @@
+# pyCycle from GitHub: the PyPI release 4.4.0 crashed with NumPy 2.x in testing,
+# the GitHub version works.
+openmdao>=3.30
+om-pycycle @ git+https://github.com/OpenMDAO/pyCycle.git@ee7e16126a7a54b5fe35292c53b7eb4e9572620b
