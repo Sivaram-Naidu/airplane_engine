@@ -35,4 +35,48 @@
 2. "Max" power uses the cruise T4 everywhere, so sea-level thrust is too low for a takeoff rating (Phase 1).
 3. `thermo_method` argument is silently overridden in `HBTF.setup()` (cosmetic, Phase 2).
 
-## Phase 1: Validate against CFM56-7B26 (next)
+## Phase 1: Validate against CFM56-7B26/3 (done 2026-11-24)
+
+### Built
+- **Project config:** `.claude/settings.json` (permissions; a fast-test hook after `.py` edits),
+  CLAUDE.md "IP and provenance" rules, `docs/originality_log.md`.
+- **Public reference data:** `reference_data.py`, where every number cites ICAO EDB v32B UID 8CM065,
+  the EDB introduction, EASA TCDS E.004 issue 07, or the ICAO LTO settings (via UK CAA). Raw files are
+  downloaded with `data/fetch_reference_data.py` and not committed (© EASA; see data/README.md).
+- **Model changes (`run_engine.py`):**
+  - configurable off-design points;
+  - customer bleed and power offtake are now per point, so test-stand points switch them off;
+  - **convergence guard** (`check_converged`): a non-converged point now raises instead of
+    printing "solved".
+- **Takeoff rating:** `validate_cfm56.py` solves for the T4 that gives the rated 117 kN at
+  sea-level static, then runs the 4 ICAO power settings (100/85/30/7 %). `--set KEY=VALUE --tag NAME`
+  runs tuning trials without editing code.
+- **Tuning (by hand, 4 trials):** cruise design BPR 5.105 → 4.73; HPC PR 9.369 → 9.96; all
+  efficiencies − 0.015. Details and all trials are in docs/assumptions.md.
+- **Tests:** `tests/test_validation.py` (marker `validation`, about 7 min) enforces the agreed
+  tolerances. The regression baseline was re-recorded deliberately (`baseline/phase1_*`).
+
+### Results: model vs CFM56-7B26/3 (sea-level static, ISA, no bleed/offtake)
+| Quantity | Model | ICAO / TCDS | Error | Tolerance |
+|---|---|---|---|---|
+| Takeoff thrust | 117.0 kN | 117.0 kN | 0 (set) | n/a |
+| OPR at takeoff | 27.89 | 27.7 | +0.7 % | ±3 % |
+| BPR at takeoff | 5.09 | 5.1 | −0.2 % | ±5 % |
+| Fuel flow, takeoff | 1.171 kg/s | 1.213 | −3.4 % | ±5 % |
+| Fuel flow, climb-out (85 %) | 0.963 | 0.986 | −2.3 % | ±5 % |
+| Fuel flow, approach (30 %) | 0.328 | 0.331 | −0.9 % | ±10 % |
+| Fuel flow, idle (7 %) | 0.128 | 0.108 | +18.7 % | ±20 % |
+
+Model outputs with no public reference: takeoff T4 ≈ 1656 K (cruise 1587 K); cruise TSFC 18.55 g/(kN·s),
+up from 17.87 untuned because the less efficient components cost fuel everywhere.
+
+### Known limitations
+1. **Idle is near its limit (+18.7 %).** The uniform efficiency penalty hurts low power about twice as much
+   as high power. Fixing this needs engine-specific component maps, which are not public.
+2. **Cruise is not validated.** ICAO data are sea level only, and the EDB introduction §3c says they
+   must not be used for cruise efficiency.
+3. **Non-unique tuning:** 7 knobs, 6 targets. The tuned values reproduce totals; they are not the
+   real engine's internals.
+4. **`run_engine.py` "max power" still uses the cruise T4 everywhere.** The takeoff rating lives
+   in `validate_cfm56.py` (T4 solved for rated thrust).
+5. **Model rpm are indicative only:** design speeds come from the pyCycle example, not the TCDS.

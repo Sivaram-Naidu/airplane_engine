@@ -1,23 +1,24 @@
 """
-Regression test: the cruise point must reproduce the Phase 0 baseline.
+Regression test: the cruise point must reproduce the recorded baseline.
 
-Baseline recorded 2026-11-24 on Python 3.12, OpenMDAO 3.45.2, pyCycle @ ee7e161,
-NumPy 2.5.5 (see baseline/quick_summary_us.csv). These are NOT real-engine numbers;
-they come from the pyCycle example inputs (see docs/assumptions.md). The test exists
-so that any change to the model shows up as a visible, deliberate diff.
+Baseline re-recorded 2026-11-24 after Phase 1 tuning (BPR 4.73, hpc_PR 9.96, efficiencies
+-0.015; see docs/assumptions.md), Python 3.12, OpenMDAO 3.45.2, pyCycle @ ee7e161.
+Source: baseline/phase1_full_summary.csv. Phase 0 (untuned) values are kept in
+baseline/phase0_*.csv for history. The test exists so that any model change shows up as a
+visible, deliberate diff.
 """
 import pytest
 
 pytestmark = pytest.mark.slow
 
-BASELINE = {  # cruise design point, US units
-    "airflow_lbm_s": 344.30314,
+BASELINE = {  # cruise design point, US units (Phase 1)
+    "airflow_lbm_s": 343.60520,
     "net_thrust_lbf": 5900.0,
-    "OPR": 30.093715,
-    "BPR": 5.105,
-    "TSFC_lbm_per_lbf_hr": 0.63071998,
+    "OPR": 31.992038,
+    "BPR": 4.73,
+    "TSFC_lbm_per_lbf_hr": 0.65473003,
     "T4_degR": 2857.0,
-    "fuel_flow_lbm_s": 1.03368,
+    "fuel_flow_lbm_s": 1.0730298,
 }
 REL_TOL = 1e-4  # Newton solver converges to ~1e-8; 1e-4 allows for library/platform noise
 
@@ -58,4 +59,4 @@ def test_si_columns_present_and_consistent(cruise):
     design, _ = cruise
     assert design["net_thrust_kN"] == pytest.approx(26.2445, rel=1e-4)
     assert design["T4_K"] == pytest.approx(1587.22, rel=1e-4)
-    assert design["TSFC_g_per_kN_s"] == pytest.approx(17.865, rel=1e-3)
+    assert design["TSFC_g_per_kN_s"] == pytest.approx(18.5455, rel=1e-4)

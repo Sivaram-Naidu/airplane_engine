@@ -25,17 +25,27 @@ from turbofan_model import HBTF, viewer
 # 1. DESIGN CHOICES  (edit these and re-run to explore)
 #    Units: thrust lbf, temperature degR, speeds rpm, altitude ft
 # ---------------------------------------------------------------------------
+#    Phase 1 (2026-11-24): BPR, hpc_PR and all five efficiencies were tuned by hand so that
+#    the model matches public CFM56-7B26/3 sea-level data (ICAO EDB UID 8CM065) within the
+#    agreed tolerances; see validate_cfm56.py and docs/assumptions.md. All values remain
+#    ASSUMPTIONS: they reproduce public totals, they are not the real engine's internals.
+#    Untuned values (pyCycle example) are given in the comments.
+# ---------------------------------------------------------------------------
 DESIGN = {
-    "alt_ft": 35000.0,       # design point = typical cruise altitude
-    "mach": 0.8,             # typical cruise Mach number
-    "Fn_lbf": 5900.0,        # net thrust needed at cruise (per engine)
-    "T4_degR": 2857.0,       # turbine inlet temperature (~1314 C). Higher = more power, harder materials problem
-    "BPR": 5.105,            # bypass ratio
-    "fan_PR": 1.685, "fan_eff": 0.8948,
-    "lpc_PR": 1.935, "lpc_eff": 0.9243,   # booster
-    "hpc_PR": 9.369, "hpc_eff": 0.8707,   # high-pressure compressor
-    "hpt_eff": 0.8888, "lpt_eff": 0.8996,
-    "LP_rpm": 4666.1, "HP_rpm": 14705.7,
+    "alt_ft": 35000.0,       # design point = typical cruise altitude (pyCycle example; ASSUMPTION)
+    "mach": 0.8,             # typical cruise Mach number (pyCycle example; ASSUMPTION)
+    "Fn_lbf": 5900.0,        # net thrust needed at cruise, per engine (pyCycle example; ASSUMPTION)
+    "T4_degR": 2857.0,       # cruise turbine inlet temperature, 1587 K (pyCycle example; ASSUMPTION)
+    # ASSUMPTION (tuned): cruise BPR 4.73 gives SLS take-off BPR 5.09 vs ICAO 5.1. Example: 5.105.
+    "BPR": 4.73,
+    "fan_PR": 1.685, "lpc_PR": 1.935,     # pyCycle example; ASSUMPTION
+    # ASSUMPTION (tuned): gives SLS take-off OPR 27.9 vs ICAO 27.7. Example: 9.369.
+    "hpc_PR": 9.96,
+    # ASSUMPTION (tuned): every efficiency = example - 0.015, a single "technology level" knob
+    # that brings take-off/climb-out fuel flow within 5 % of ICAO. Example values:
+    # fan 0.8948, lpc 0.9243, hpc 0.8707, hpt 0.8888, lpt 0.8996.
+    "fan_eff": 0.8798, "lpc_eff": 0.9093, "hpc_eff": 0.8557, "hpt_eff": 0.8738, "lpt_eff": 0.8846,
+    "LP_rpm": 4666.1, "HP_rpm": 14705.7,  # pyCycle example; ASSUMPTION (only scale the maps)
 }
 
 # Off-design flight conditions (Mach, altitude ft). Ordered from cruise down to
@@ -45,8 +55,33 @@ FLIGHT_SWEEP = [(0.8, 35000), (0.6, 20000), (0.4, 10000), (0.2, 1000), (0.001, 0
 POWER_SETTINGS = [1.0, 0.8]   # fraction of max thrust at each condition
 
 
+# Installed loads: customer (cabin) bleed and shaft power taken by the aircraft.
+# They are per-point inputs (not shared cycle parameters) so that test-stand points
+# can switch them off: ICAO databank and TCDS ratings assume no customer bleed or
+# power offtake (EASA ICAO EDB introduction §3c; EASA TCDS E.004 issue 07, note 2).
+# Values from the pyCycle example (ASSUMPTION, see docs/assumptions.md).
+INSTALLED_LOADS = {"cust_bleed_frac": 0.0445, "HPX_hp": 250.0}
+
+DEFAULT_OD_POINTS = (("OD_max", "T4"), ("OD_part", "percent_thrust"))
+
+
+def set_installed_loads(prob, pt, installed=True):
+    """Installed = aircraft loads on (flight); installed=False = test stand (ICAO/TCDS)."""
+    prob.set_val(f"{pt}.hpc.cust:frac_W", INSTALLED_LOADS["cust_bleed_frac"] if installed else 0.0)
+    prob.set_val(f"{pt}.hp_shaft.HPX", INSTALLED_LOADS["HPX_hp"] if installed else 0.0, units="hp")
+
+
 class CFM56ClassEngine(pyc.MPCycle):
-    """Design point + two off-design points (max power, part power)."""
+    """Design point + configurable off-design points.
+
+    Default: OD_max (throttle = T4 limit) and OD_part (throttle = % of OD_max thrust).
+    A point in "percent_thrust" mode without OD_max has Fn_max as a free input, so it
+    acts as a thrust-target point: Fn = PC * Fn_max.
+    """
+
+    def initialize(self):
+        self.options.declare("od_points", default=DEFAULT_OD_POINTS)
+        super().initialize()
 
     def setup(self):
         d = DESIGN
@@ -73,22 +108,23 @@ class CFM56ClassEngine(pyc.MPCycle):
             "hpc.cool1:frac_W": 0.050708, "hpc.cool1:frac_P": 0.5, "hpc.cool1:frac_work": 0.5,
             "hpc.cool2:frac_W": 0.020274, "hpc.cool2:frac_P": 0.55, "hpc.cool2:frac_work": 0.5,
             "bld3.cool3:frac_W": 0.067214, "bld3.cool4:frac_W": 0.101256,
-            "hpc.cust:frac_P": 0.5, "hpc.cust:frac_work": 0.5, "hpc.cust:frac_W": 0.0445,
+            "hpc.cust:frac_P": 0.5, "hpc.cust:frac_work": 0.5,
             "hpt.cool3:frac_P": 1.0, "hpt.cool4:frac_P": 0.0,
             "lpt.cool1:frac_P": 1.0, "lpt.cool2:frac_P": 0.0,
         }
         for k, v in params.items():
             self.pyc_add_cycle_param(k, v)
-        self.pyc_add_cycle_param("hp_shaft.HPX", 250.0, units="hp")  # aircraft electrical/hydraulic load
+        # hpc.cust:frac_W and hp_shaft.HPX are per point: see INSTALLED_LOADS.
 
-        self.pyc_add_pnt("OD_max", HBTF(design=False, thermo_method="CEA", throttle_mode="T4"))
-        self.pyc_add_pnt("OD_part", HBTF(design=False, thermo_method="CEA",
-                                         throttle_mode="percent_thrust"))
-        for pt in ("OD_max", "OD_part"):
+        od_points = self.options["od_points"]
+        for pt, mode in od_points:
+            self.pyc_add_pnt(pt, HBTF(design=False, thermo_method="CEA", throttle_mode=mode))
             self.set_input_defaults(f"{pt}.fc.MN", 0.8)
             self.set_input_defaults(f"{pt}.fc.alt", 35000.0, units="ft")
             self.set_input_defaults(f"{pt}.fc.dTs", 0.0, units="degR")
-        self.connect("OD_max.perf.Fn", "OD_part.Fn_max")
+        names = [p for p, _ in od_points]
+        if "OD_max" in names and "OD_part" in names:
+            self.connect("OD_max.perf.Fn", "OD_part.Fn_max")
 
         self.pyc_use_default_des_od_conns()
         self.pyc_connect_des_od("core_nozz.Throat:stat:area", "balance.rhs:W")
@@ -96,10 +132,13 @@ class CFM56ClassEngine(pyc.MPCycle):
         super().setup()
 
 
-def build_problem():
+def build_problem(od_points=DEFAULT_OD_POINTS):
     d = DESIGN
-    prob = om.Problem(model=CFM56ClassEngine(), reports=False)
+    prob = om.Problem(model=CFM56ClassEngine(od_points=od_points), reports=False)
     prob.setup()
+    od_names = [p for p, _ in od_points]
+    for pt in ["DESIGN"] + od_names:
+        set_installed_loads(prob, pt, installed=True)
 
     for comp in ("fan", "lpc", "hpc"):
         prob.set_val(f"DESIGN.{comp}.PR", d[f"{comp}_PR"])
@@ -110,8 +149,11 @@ def build_problem():
     prob.set_val("DESIGN.fc.MN", d["mach"])
     prob.set_val("DESIGN.T4_MAX", d["T4_degR"], units="degR")
     prob.set_val("DESIGN.Fn_DES", d["Fn_lbf"], units="lbf")
-    prob.set_val("OD_max.T4_MAX", d["T4_degR"], units="degR")
-    prob.set_val("OD_part.PC", 0.8)
+    for pt, mode in od_points:
+        if mode == "T4":
+            prob.set_val(f"{pt}.T4_MAX", d["T4_degR"], units="degR")
+        else:
+            prob.set_val(f"{pt}.PC", 0.8)
 
     # Initial guesses for the solver (rough values are fine)
     prob["DESIGN.balance.FAR"] = 0.025
@@ -120,7 +162,7 @@ def build_problem():
     prob["DESIGN.balance.hpt_PR"] = 3.0
     prob["DESIGN.fc.balance.Pt"] = 5.2
     prob["DESIGN.fc.balance.Tt"] = 440.0
-    for pt in ("OD_max", "OD_part"):
+    for pt in od_names:
         prob[f"{pt}.balance.FAR"] = 0.02467
         prob[f"{pt}.balance.W"] = 300
         prob[f"{pt}.balance.BPR"] = d["BPR"]
@@ -132,6 +174,23 @@ def build_problem():
             prob[f"{pt}.{c}.map.RlineMap"] = 2.0
     prob.set_solver_print(level=-1)
     return prob
+
+
+class NotConvergedError(RuntimeError):
+    pass
+
+
+def check_converged(prob, points, tol=1e-6):
+    """Raise if any point's residuals are not ~zero after run_model.
+
+    The point solvers use err_on_non_converge=False, so without this check a failed
+    solve would print results as if it had succeeded. tol=1e-6 is 100x the Newton
+    atol (1e-8); converged points in Phase 0 reached <= 8.4e-9.
+    """
+    for pt in points:
+        norm = prob.model._get_subsystem(pt)._residuals.get_norm()
+        if not norm < tol:  # also catches NaN
+            raise NotConvergedError(f"Point {pt} did not converge: residual norm {norm:.2e} > {tol:.0e}")
 
 
 def summary_row(prob, pt, label):
@@ -191,6 +250,7 @@ def main():
             for pc in settings:
                 prob["OD_part.PC"] = pc
                 prob.run_model()
+                check_converged(prob, ("DESIGN", "OD_max", "OD_part"))
                 if i == 0 and pc == settings[0]:
                     rows.append(summary_row(prob, "DESIGN", "DESIGN (cruise sizing)"))
                     viewer(prob, "DESIGN", file=report)

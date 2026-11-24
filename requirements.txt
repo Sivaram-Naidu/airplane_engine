@@ -2,3 +2,5 @@
 # the GitHub version works.
 openmdao>=3.30
 om-pycycle @ git+https://github.com/OpenMDAO/pyCycle.git@ee7e16126a7a54b5fe35292c53b7eb4e9572620b
+openpyxl>=3.1   # read ICAO databank (Phase 1)
+pytest>=8

@@ -4,9 +4,45 @@ Rule: every number in the model either cites a public source or is labelled
 **ASSUMPTION** here (and in a code comment once the value is changed from the
 example).
 
+## Status after Phase 1 (2026-11-24)
+
+Seven inputs were **tuned** so that the model reproduces public CFM56-7B26/3 sea-level data
+(ICAO EDB UID 8CM065, EASA TCDS E.004). Tuning means the model's *totals* match. It does **not**
+mean these are the real engine's internal values, which are not public. There are more knobs
+than targets, so other combinations could match equally well.
+
+| Input | Example value | Tuned value | Why (target it moves) |
+|---|---|---|---|
+| Cruise design BPR | 5.105 | **4.73** | SLS take-off BPR → 5.09 (ICAO 5.1) |
+| HPC pressure ratio | 9.369 | **9.96** | SLS take-off OPR → 27.9 (ICAO 27.7) |
+| All 5 component efficiencies | fan 0.8948, LPC 0.9243, HPC 0.8707, HPT 0.8888, LPT 0.8996 | **each − 0.015** | take-off/climb-out fuel flow within 5 % of ICAO |
+
+Tuning trials (all in `results/validation_cfm56_7b26_*.md`, generated locally):
+
+| Trial | Change | OPR err | BPR err | Fuel T/O | C/O | App | Idle |
+|---|---|---|---|---|---|---|---|
+| untuned | none | −6.0 % | +8.0 % | −8.2 % | −7.6 % | −8.4 % | +5.4 % |
+| A | BPR 4.73 | −4.6 % | −0.4 % | −4.9 % | −4.7 % | −6.4 % | +6.7 % |
+| B | A + hpc_PR 9.96 | +1.1 % | −0.3 % | −5.9 % | −5.7 % | −7.3 % | +5.8 % |
+| **C (adopted)** | B + eff − 0.015 | +0.7 % | −0.2 % | −3.4 % | −2.3 % | −0.9 % | +18.7 % |
+| D | B + eff − 0.030 | −0.2 % | −0.1 % | 0.0 % | +1.9 % | +6.7 % | +36.7 % (fails) |
+
+Known limitation: a uniform efficiency penalty raises idle fuel about twice as fast as
+take-off fuel, so idle (+18.7 %) is near its ±20 % limit. Generic pyCycle maps are least
+reliable at low power. Better low-power fidelity needs engine-specific maps, which are not public.
+
+Other Phase 1 modelling choices:
+
+| Choice | Value | Source / status |
+|---|---|---|
+| Test-stand points: customer bleed, power offtake | 0, 0 | ICAO EDB columns "Loads Power Extraction" = 0 kW, "Stage Bleed" = 0 %; EDB intro §3c; TCDS note 2 |
+| Inlet ram recovery at test stand | 0.999 (unchanged) | TCDS note 2 assumes 100 %; ASSUMPTION, ~0.1 % effect, kept for simplicity |
+| Take-off T4 | **output**, about 1656 K | Solved so that Fn = 117 kN. No public value to compare against |
+| Path cruise → SLS | thrust targets 90 % of Phase 0 max | numerical only (solver convergence), no physical meaning |
+
 ## Status after Phase 0
 
-**None of the current model inputs is CFM56-7B data.** All values in
+**None of the model inputs was CFM56-7B data.** All values in
 `run_engine.py` (`DESIGN`, station Mach numbers, losses, bleeds, `HPX`) and the
 component maps in `turbofan_model.py` are copied unchanged from the pyCycle example
 `example_cycles/high_bypass_turbofan.py` at commit

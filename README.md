@@ -36,10 +36,19 @@ heavy 3D CFD of blades, and even then a multi-core CPU is the main requirement.
    ```
    Results go to `results/summary.csv` and `results/full_report.txt`.
 
+## Validate against the real CFM56-7B26/3 (Phase 1)
+```
+python data/fetch_reference_data.py   # once: downloads the public ICAO/EASA source files
+python validate_cfm56.py              # about 7 minutes; writes results/validation_cfm56_7b26.md
+```
+Compares takeoff thrust, OPR, BPR and fuel flow at the 4 ICAO power settings with public
+data. The current result is in PROGRESS.md (all within the agreed tolerances).
+
 ## Tests
 ```
 pytest -m "not slow"   # unit tests, under a second
 pytest                 # also runs the cruise regression test (about 2 minutes)
+pytest -m validation   # Phase 1 validation against ICAO data (about 7 minutes)
 ```
 
 ## Docs

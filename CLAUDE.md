@@ -9,6 +9,9 @@ Only public, open sources are used.
 - `turbofan_model.py`: physics of one operating point (HBTF class), adapted from the
   official pyCycle example (Apache 2.0, keep the attribution header).
 - `run_engine.py`: design inputs (DESIGN dict), flight sweep, CSV and report output.
+- `validate_cfm56.py`: Phase 1 validation vs CFM56-7B26/3 (takeoff rating + ICAO LTO points);
+  `--set KEY=VALUE --tag NAME` for tuning trials.
+- `reference_data.py`: public reference values with citations; raw files via `data/fetch_reference_data.py`.
 - `units.py`: US -> SI conversions (display only).
 - `tests/`: pytest; `slow` marker = runs the pyCycle model.
 - `baseline/`: recorded reference outputs used by regression tests.
@@ -49,8 +52,8 @@ Only public, open sources are used.
 - NASA NTRS: Energy Efficient Engine (E3) reports, pyCycle and N+3 papers.
 
 ## Roadmap
-1. Match CFM56-7B public data (ICAO databank) by tuning DESIGN values.
-2. Add a separate takeoff rating (higher T4) and compare OPR/fuel flow to ICAO.
+1. ~~Match CFM56-7B public data~~ done (Phase 1, see PROGRESS.md).
+2. ~~Separate takeoff rating~~ done in validate_cfm56.py (T4 solved for rated thrust).
 3. Plot a flight envelope (thrust and TSFC vs Mach/altitude).
 4. Parameter studies: BPR, OPR, T4 vs fuel burn.
 5. Geared turbofan (study pyCycle example_cycles/N+3ref and NASA AGTF30).

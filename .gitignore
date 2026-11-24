@@ -6,3 +6,7 @@ results/
 reports/
 *_out/
 coloring_files/
+
+# Raw reference data (download with data/fetch_reference_data.py; not redistributed)
+data/icao_edb/
+data/easa_tcds/

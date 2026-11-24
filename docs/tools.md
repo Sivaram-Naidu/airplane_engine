@@ -8,6 +8,7 @@ repository's LICENSE before use.
 | [OpenMDAO](https://github.com/OpenMDAO/OpenMDAO) | Solver and optimisation framework | 3.45.2 | Apache 2.0 | `openmdao-3.45.2.dist-info/licenses/LICENSE.txt`, METADATA `License-Expression: Apache-2.0` | Phase 0 |
 | [pyCycle](https://github.com/OpenMDAO/pyCycle) | Engine cycle (thermodynamic) model | git `ee7e161` (4.4.1.dev0) | Apache 2.0 | `om_pycycle-4.4.1.dev0.dist-info/licenses/LICENSE.txt` | Phase 0 |
 | [NumPy](https://github.com/numpy/numpy) | Numerics (OpenMDAO dependency) | 2.5.5 | BSD-3-Clause | Well known; not re-checked | Phase 0 |
+| [openpyxl](https://foss.heptapod.net/openpyxl/openpyxl) | Read the ICAO databank .xlsx | 3.1.5 | MIT | package METADATA `License: MIT` | Phase 1 |
 | [pytest](https://github.com/pytest-dev/pytest) | Tests (development only) | latest | MIT | Well known; not re-checked | Phase 0 |
 
 ## Planned (licence to be checked when the phase starts)
